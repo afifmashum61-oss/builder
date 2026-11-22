@@ -16,7 +16,8 @@ export default function PortofolioSection({ websites, onSelectProject }) {
 
   const categories = ['Semua', 'Sekolah', 'Bisnis', 'UMKM', 'E-Commerce', 'SaaS'];
 
-  const filteredWebsites = websites.filter(item => {
+  const safeWebsites = Array.isArray(websites) ? websites : [];
+  const filteredWebsites = safeWebsites.filter(item => {
     if (activeCategory === 'Semua') return true;
     return item.category?.toLowerCase() === activeCategory.toLowerCase();
   });

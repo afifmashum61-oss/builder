@@ -26,6 +26,8 @@ export default function App() {
     }
   };
 
+  const fetchWebsites = reloadWebsites;
+
   useEffect(() => {
     // 1. Initial fetch
     fetchWebsitesFromFirebase().then((data) => {

@@ -18,25 +18,27 @@ export default function KatalogPage({ websites, loading, onSelectProject }) {
   const [selectedTag, setSelectedTag] = useState('Semua');
   const [sortBy, setSortBy] = useState('terbaru');
 
+  const safeWebsites = Array.isArray(websites) ? websites : [];
+
   // Extract all unique categories and tags
   const categories = useMemo(() => {
-    const set = new Set(websites.map((w) => w.category).filter(Boolean));
+    const set = new Set(safeWebsites.map((w) => w.category).filter(Boolean));
     return ['Semua', ...Array.from(set)];
-  }, [websites]);
+  }, [safeWebsites]);
 
   const allTags = useMemo(() => {
     const set = new Set();
-    websites.forEach((w) => {
+    safeWebsites.forEach((w) => {
       if (Array.isArray(w.tags)) {
         w.tags.forEach((t) => set.add(t));
       }
     });
     return ['Semua', ...Array.from(set)];
-  }, [websites]);
+  }, [safeWebsites]);
 
   // Filter & Sort
   const filteredWebsites = useMemo(() => {
-    return websites
+    return safeWebsites
       .filter((item) => {
         // Category filter
         if (selectedCategory !== 'Semua' && item.category !== selectedCategory) {
