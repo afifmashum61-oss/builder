@@ -17,7 +17,22 @@ export default function PortofolioSection({ websites, onSelectProject }) {
   const categories = ['Semua', 'Sekolah', 'Bisnis', 'UMKM', 'E-Commerce', 'SaaS'];
 
   const safeWebsites = Array.isArray(websites) ? websites : [];
-  const filteredWebsites = safeWebsites.filter(item => {
+  
+  // Hapus item duplikat otomatis
+  const uniqueWebsites = [];
+  const seenKeys = new Set();
+  for (const item of safeWebsites) {
+    if (!item) continue;
+    const titleKey = (item.title || '').trim().toLowerCase();
+    const demoKey = (item.demoUrl || '').trim().toLowerCase();
+    const key = `${item.id || ''}:::${titleKey}:::${demoKey}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueWebsites.push(item);
+    }
+  }
+
+  const filteredWebsites = uniqueWebsites.filter(item => {
     if (activeCategory === 'Semua') return true;
     return item.category?.toLowerCase() === activeCategory.toLowerCase();
   });

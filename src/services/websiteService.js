@@ -31,13 +31,35 @@ export const filterDeleted = (items) => {
   if (!Array.isArray(items)) return [];
   try {
     const saved = localStorage.getItem("afifedu_deleted_ids");
-    if (!saved) return items;
+    if (!saved) return deduplicateWebsites(items);
     const deletedIds = JSON.parse(saved);
-    if (!Array.isArray(deletedIds) || deletedIds.length === 0) return items;
-    return items.filter((item) => !deletedIds.includes(item.id));
+    if (!Array.isArray(deletedIds) || deletedIds.length === 0) return deduplicateWebsites(items);
+    return deduplicateWebsites(items.filter((item) => !deletedIds.includes(item.id)));
   } catch {
-    return items;
+    return deduplicateWebsites(items);
   }
+};
+
+// Helper: Hapus data duplikat berdasarkan ID atau kombinasi Judul & Link
+export const deduplicateWebsites = (items) => {
+  if (!Array.isArray(items)) return [];
+  const seenIds = new Set();
+  const seenKeys = new Set();
+  return items.filter((item) => {
+    if (!item || !item.id) return false;
+    if (seenIds.has(item.id)) return false;
+    seenIds.add(item.id);
+
+    const title = (item.title || '').trim().toLowerCase();
+    const demo = (item.demoUrl || '').trim().toLowerCase();
+    if (title) {
+      const key = `${title}:::${demo}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+    }
+
+    return true;
+  });
 };
 
 // 1. Ambil semua website dari Cloud Firestore
@@ -138,12 +160,14 @@ export const addWebsiteToFirebase = async (websiteData) => {
     await setDoc(docRef, payload);
     return { success: true, data: payload };
   } catch (error) {
-    console.error("Gagal simpan ke Firebase:", error);
-    // Simpan lokal sebagai cadangan
+    console.warn("Gagal simpan ke Firebase (mode offline aktif):", error);
+    // Simpan lokal sebagai cadangan tanpa menduplikasi jika sudah ada
     const saved = localStorage.getItem("afifedu_websites");
     const current = saved ? JSON.parse(saved) : defaultWebsites;
-    const updated = [payload, ...current];
-    localStorage.setItem("afifedu_websites", JSON.stringify(updated));
+    if (!current.some((w) => w.id === payload.id)) {
+      const updated = deduplicateWebsites([payload, ...current]);
+      localStorage.setItem("afifedu_websites", JSON.stringify(updated));
+    }
     return { success: true, data: payload, offline: true };
   }
 };
