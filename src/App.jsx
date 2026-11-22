@@ -12,7 +12,7 @@ import { subscribeToFirebaseWebsites, fetchWebsitesFromFirebase } from './servic
 
 export default function App() {
   const [websites, setWebsites] = useState(defaultWebsites);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
 
   const reloadWebsites = async () => {

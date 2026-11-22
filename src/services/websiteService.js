@@ -16,11 +16,16 @@ const COLLECTION_NAME = "websites";
 export const fetchWebsitesFromFirebase = async () => {
   try {
     const colRef = collection(db, COLLECTION_NAME);
-    const snapshot = await getDocs(colRef);
+    
+    // Timeout 3 detik agar halaman tidak pernah macet
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Timeout koneksi Firestore")), 3000)
+    );
+    const snapshot = await Promise.race([getDocs(colRef), timeoutPromise]);
     
     if (snapshot.empty) {
-      // Jika Firestore masih kosong, kita inisialisasi dengan data default
-      await seedFirestoreDefaults();
+      // Inisialisasi default secara asynchronous di latar belakang
+      seedFirestoreDefaults().catch(() => {});
       return defaultWebsites;
     }
 
@@ -62,7 +67,12 @@ export const subscribeToFirebaseWebsites = (onUpdate, onError) => {
         onUpdate(items);
       },
       (error) => {
-        console.warn("Real-time listener warning:", error);
+        console.warn("Real-time listener notice:", error);
+        const saved = localStorage.getItem("afifedu_websites");
+        if (saved) {
+          try { onUpdate(JSON.parse(saved)); return; } catch {}
+        }
+        onUpdate(defaultWebsites);
         if (onError) onError(error);
       }
     );
