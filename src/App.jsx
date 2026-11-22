@@ -8,41 +8,50 @@ import Footer from './components/Footer';
 import ProjectDetailModal from './components/ProjectDetailModal';
 import FloatingControls from './components/FloatingControls';
 import { defaultWebsites } from './data/defaultWebsites';
+import { subscribeToFirebaseWebsites, fetchWebsitesFromFirebase } from './services/websiteService';
 
 export default function App() {
-  const [websites, setWebsites] = useState([]);
+  const [websites, setWebsites] = useState(defaultWebsites);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(null);
 
-  const fetchWebsites = async () => {
+  const reloadWebsites = async () => {
     try {
-      const res = await fetch('/api/websites');
-      const data = await res.json();
-      if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
-        setWebsites(data.data);
-        localStorage.setItem('afifedu_websites', JSON.stringify(data.data));
-        return;
+      const data = await fetchWebsitesFromFirebase();
+      if (data && data.length > 0) {
+        setWebsites(data);
       }
-    } catch (err) {
-      // Fallback for static hosting (Vercel)
+    } catch (e) {
+      console.warn("Reload websites warning:", e);
     }
-
-    const saved = localStorage.getItem('afifedu_websites');
-    if (saved) {
-      try {
-        setWebsites(JSON.parse(saved));
-      } catch {
-        setWebsites(defaultWebsites);
-      }
-    } else {
-      setWebsites(defaultWebsites);
-      localStorage.setItem('afifedu_websites', JSON.stringify(defaultWebsites));
-    }
-    setLoading(false);
   };
 
   useEffect(() => {
-    fetchWebsites();
+    // 1. Initial fetch
+    fetchWebsitesFromFirebase().then((data) => {
+      if (data && data.length > 0) {
+        setWebsites(data);
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+
+    // 2. Real-time Cloud Firestore synchronization
+    const unsubscribe = subscribeToFirebaseWebsites(
+      (realtimeWebsites) => {
+        if (realtimeWebsites && realtimeWebsites.length > 0) {
+          setWebsites(realtimeWebsites);
+        }
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('Firebase real-time sync notice:', err);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   return (

@@ -24,6 +24,12 @@ import {
 } from 'lucide-react';
 import AfifeduLogo from '../components/AfifeduLogo';
 import { defaultWebsites } from '../data/defaultWebsites';
+import { 
+  fetchWebsitesFromFirebase, 
+  addWebsiteToFirebase, 
+  updateWebsiteInFirebase, 
+  deleteWebsiteFromFirebase 
+} from '../services/websiteService';
 
 // Helper: Auto-generate live screenshot URL from any website link (like Vercel does)
 const generateScreenshotUrl = (url) => {
@@ -89,21 +95,17 @@ export default function AdminPage({ onWebsitesChanged }) {
     }
   }, []);
 
-  // Fetch admin data with fallback for Vercel
+  // Fetch admin data from Firebase Cloud Firestore with fallback
   const fetchData = async () => {
     setLoading(true);
     let list = [];
     try {
-      const resWebsites = await fetch('/api/websites');
-      const dataWeb = await resWebsites.json();
-      if (dataWeb && dataWeb.success && Array.isArray(dataWeb.data)) {
-        list = dataWeb.data;
-      }
+      list = await fetchWebsitesFromFirebase();
     } catch (err) {
-      // offline / static Vercel
+      console.warn("Firestore fetch error:", err);
     }
 
-    if (list.length === 0) {
+    if (!list || list.length === 0) {
       const saved = localStorage.getItem('afifedu_websites');
       if (saved) {
         try { list = JSON.parse(saved); } catch { list = defaultWebsites; }
@@ -205,7 +207,9 @@ export default function AdminPage({ onWebsitesChanged }) {
     setWebsites(updated);
     setQuickUrl('');
 
+    // Simpan ke Cloud Firestore Firebase & Local API
     try {
+      await addWebsiteToFirebase(newSite);
       await fetch('/api/websites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -251,6 +255,7 @@ export default function AdminPage({ onWebsitesChanged }) {
     setWebsites(updated);
 
     try {
+      await updateWebsiteInFirebase(item.id, { image: newScreenshot });
       await fetch(`/api/websites/${item.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -372,8 +377,18 @@ export default function AdminPage({ onWebsitesChanged }) {
     setWebsites(updatedList);
     setIsModalOpen(false);
 
-    // Also attempt API save
+    // Save to Cloud Firestore & API
     try {
+      if (editingItem) {
+        await updateWebsiteInFirebase(editingItem.id, {
+          ...formData,
+          tags: tagsArray
+        });
+      } else {
+        const newSite = updatedList[0];
+        await addWebsiteToFirebase(newSite);
+      }
+
       const url = editingItem ? `/api/websites/${editingItem.id}` : '/api/websites';
       const method = editingItem ? 'PUT' : 'POST';
       await fetch(url, {
@@ -400,6 +415,7 @@ export default function AdminPage({ onWebsitesChanged }) {
     setWebsites(updated);
 
     try {
+      await deleteWebsiteFromFirebase(id);
       await fetch(`/api/websites/${id}`, { method: 'DELETE' });
     } catch (err) {
       // offline
@@ -416,6 +432,7 @@ export default function AdminPage({ onWebsitesChanged }) {
     setWebsites(updated);
 
     try {
+      await updateWebsiteInFirebase(item.id, { isFeatured: !item.isFeatured });
       await fetch(`/api/websites/${item.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -505,6 +522,10 @@ export default function AdminPage({ onWebsitesChanged }) {
             <AfifeduLogo variant="white" showSubtext={false} />
             <span className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono">
               /admin
+            </span>
+            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+              Firebase Firestore: builder-386e1
             </span>
           </div>
 
