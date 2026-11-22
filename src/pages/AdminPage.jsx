@@ -76,6 +76,8 @@ export default function AdminPage({ onWebsitesChanged, websites: externalWebsite
   const [searchTerm, setSearchTerm] = useState('');
   const [quickUrl, setQuickUrl] = useState('');
   const [autoCaptureScreenshot, setAutoCaptureScreenshot] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('');
 
   // Sync external state from App
   useEffect(() => {
@@ -120,6 +122,25 @@ export default function AdminPage({ onWebsitesChanged, websites: externalWebsite
     }
   }, []);
 
+  // Fungsi sinkronisasi seluruh website lokal ke Cloud Firestore
+  const handleSyncToCloud = async (customList) => {
+    const toSync = customList || websites;
+    if (!toSync || toSync.length === 0) return;
+    setIsSyncing(true);
+    try {
+      for (const item of toSync) {
+        await addWebsiteToFirebase(item);
+      }
+      setSyncStatus('Semua data berhasil tersimpan di Cloud!');
+      setTimeout(() => setSyncStatus(''), 4000);
+    } catch (e) {
+      console.warn("Sync error:", e);
+      setSyncStatus('Gagal sinkronisasi');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Fetch admin data from Firebase Cloud Firestore with fallback
   const fetchData = async () => {
     setLoading(true);
@@ -140,6 +161,11 @@ export default function AdminPage({ onWebsitesChanged, websites: externalWebsite
     }
 
     updateAndSync(list);
+
+    // Otomatis sinkronkan ke Cloud Firestore jika belum ada
+    if (list && list.length > 0) {
+      handleSyncToCloud(list);
+    }
 
     const categories = [...new Set(list.map(i => i.category || 'Umum'))];
     const totalViews = list.reduce((acc, curr) => acc + (curr.views || 0), 0);
@@ -568,13 +594,24 @@ export default function AdminPage({ onWebsitesChanged, websites: externalWebsite
             </p>
           </div>
 
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-brand-800 hover:bg-brand-900 text-white font-bold text-sm shadow-md transition-all self-start sm:self-auto hover:scale-105"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Tambah Website Baru</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => handleSyncToCloud()}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white border border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-bold text-sm shadow-sm transition-all self-start sm:self-auto"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-emerald-600' : 'text-slate-400'}`} />
+              <span>{isSyncing ? 'Menyinkronkan ke Cloud...' : (syncStatus || 'Sinkronkan ke Cloud')}</span>
+            </button>
+
+            <button
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-brand-800 hover:bg-brand-900 text-white font-bold text-sm shadow-md transition-all self-start sm:self-auto hover:scale-105"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Tambah Website Baru</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats Row */}
