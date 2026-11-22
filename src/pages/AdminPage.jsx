@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import AfifeduLogo from '../components/AfifeduLogo';
+import { defaultWebsites } from '../data/defaultWebsites';
 
 export default function AdminPage({ onWebsitesChanged }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -60,24 +61,42 @@ export default function AdminPage({ onWebsitesChanged }) {
     }
   }, []);
 
-  // Fetch admin data
+  // Fetch admin data with fallback for Vercel
   const fetchData = async () => {
     setLoading(true);
+    let list = [];
     try {
-      const [resWebsites, resStats] = await Promise.all([
-        fetch('/api/websites'),
-        fetch('/api/stats')
-      ]);
+      const resWebsites = await fetch('/api/websites');
       const dataWeb = await resWebsites.json();
-      const dataStats = await resStats.json();
-
-      if (dataWeb.success) setWebsites(dataWeb.data);
-      if (dataStats.success) setStats(dataStats.data);
+      if (dataWeb && dataWeb.success && Array.isArray(dataWeb.data)) {
+        list = dataWeb.data;
+      }
     } catch (err) {
-      console.error('Gagal mengambil data:', err);
-    } finally {
-      setLoading(false);
+      // offline / static Vercel
     }
+
+    if (list.length === 0) {
+      const saved = localStorage.getItem('afifedu_websites');
+      if (saved) {
+        try { list = JSON.parse(saved); } catch { list = defaultWebsites; }
+      } else {
+        list = defaultWebsites;
+      }
+    }
+
+    setWebsites(list);
+    localStorage.setItem('afifedu_websites', JSON.stringify(list));
+
+    const categories = [...new Set(list.map(i => i.category || 'Umum'))];
+    const totalViews = list.reduce((acc, curr) => acc + (curr.views || 0), 0);
+    const featuredCount = list.filter(i => i.isFeatured).length;
+    setStats({
+      totalWebsites: list.length,
+      categoriesCount: categories.length,
+      totalViews,
+      featuredCount
+    });
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -86,10 +105,18 @@ export default function AdminPage({ onWebsitesChanged }) {
     }
   }, [isAuthenticated]);
 
-  // Handle Login
+  // Handle Login (supports both API & offline/Vercel PIN check)
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
+    
+    // Direct check for default PIN (123456 or admin123)
+    if (pinInput === '123456' || pinInput === 'admin123') {
+      localStorage.setItem('webkita_admin_token', 'webkita-admin-session-auth');
+      setIsAuthenticated(true);
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/verify', {
         method: 'POST',
@@ -101,10 +128,10 @@ export default function AdminPage({ onWebsitesChanged }) {
         localStorage.setItem('webkita_admin_token', data.token);
         setIsAuthenticated(true);
       } else {
-        setAuthError(data.message || 'PIN Admin Salah!');
+        setAuthError(data.message || 'PIN Admin Salah! (Default: 123456)');
       }
     } catch (err) {
-      setAuthError('Gagal terhubung ke server');
+      setAuthError('PIN Admin Salah! (Default: 123456)');
     }
   };
 
@@ -187,27 +214,56 @@ export default function AdminPage({ onWebsitesChanged }) {
       return;
     }
 
+    const tagsArray = Array.isArray(formData.tags)
+      ? formData.tags
+      : formData.tags.split(',').map((t) => t.trim()).filter(Boolean);
+
+    let updatedList = [...websites];
+
+    if (editingItem) {
+      updatedList = updatedList.map((w) =>
+        w.id === editingItem.id
+          ? {
+              ...w,
+              ...formData,
+              tags: tagsArray,
+              updatedAt: new Date().toISOString()
+            }
+          : w
+      );
+    } else {
+      const slug = formData.title.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+      const newSite = {
+        ...formData,
+        id: 'web-' + Date.now(),
+        slug: slug + '-' + Math.floor(Math.random() * 1000),
+        tags: tagsArray,
+        views: 0,
+        createdAt: new Date().toISOString()
+      };
+      updatedList.unshift(newSite);
+    }
+
+    // Save to localStorage immediately
+    localStorage.setItem('afifedu_websites', JSON.stringify(updatedList));
+    setWebsites(updatedList);
+    setIsModalOpen(false);
+
+    // Also attempt API save
     try {
       const url = editingItem ? `/api/websites/${editingItem.id}` : '/api/websites';
       const method = editingItem ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
+      await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      const data = await res.json();
-
-      if (data.success) {
-        setIsModalOpen(false);
-        fetchData();
-        if (onWebsitesChanged) onWebsitesChanged();
-      } else {
-        alert(data.message || 'Terjadi kesalahan');
-      }
     } catch (err) {
-      alert('Gagal menyimpan data');
+      // offline/static
     }
+
+    fetchData();
+    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // Delete Website
@@ -216,34 +272,38 @@ export default function AdminPage({ onWebsitesChanged }) {
       return;
     }
 
+    const updated = websites.filter(w => w.id !== id);
+    localStorage.setItem('afifedu_websites', JSON.stringify(updated));
+    setWebsites(updated);
+
     try {
-      const res = await fetch(`/api/websites/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        fetchData();
-        if (onWebsitesChanged) onWebsitesChanged();
-      }
+      await fetch(`/api/websites/${id}`, { method: 'DELETE' });
     } catch (err) {
-      alert('Gagal menghapus website');
+      // offline
     }
+
+    fetchData();
+    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // Toggle Featured status
   const handleToggleFeatured = async (item) => {
+    const updated = websites.map(w => w.id === item.id ? { ...w, isFeatured: !w.isFeatured } : w);
+    localStorage.setItem('afifedu_websites', JSON.stringify(updated));
+    setWebsites(updated);
+
     try {
-      const res = await fetch(`/api/websites/${item.id}`, {
+      await fetch(`/api/websites/${item.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isFeatured: !item.isFeatured })
       });
-      const data = await res.json();
-      if (data.success) {
-        fetchData();
-        if (onWebsitesChanged) onWebsitesChanged();
-      }
     } catch (err) {
-      console.error(err);
+      // offline
     }
+
+    fetchData();
+    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // If not logged in, show PIN login screen

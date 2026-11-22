@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProjectDetailModal from './components/ProjectDetailModal';
 import FloatingControls from './components/FloatingControls';
+import { defaultWebsites } from './data/defaultWebsites';
 
 export default function App() {
   const [websites, setWebsites] = useState([]);
@@ -17,14 +18,27 @@ export default function App() {
     try {
       const res = await fetch('/api/websites');
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
         setWebsites(data.data);
+        localStorage.setItem('afifedu_websites', JSON.stringify(data.data));
+        return;
       }
     } catch (err) {
-      console.error('Failed to load websites:', err);
-    } finally {
-      setLoading(false);
+      // Fallback for static hosting (Vercel)
     }
+
+    const saved = localStorage.getItem('afifedu_websites');
+    if (saved) {
+      try {
+        setWebsites(JSON.parse(saved));
+      } catch {
+        setWebsites(defaultWebsites);
+      }
+    } else {
+      setWebsites(defaultWebsites);
+      localStorage.setItem('afifedu_websites', JSON.stringify(defaultWebsites));
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -34,9 +48,13 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAF9] text-slate-800">
       <Routes>
-        {/* Halaman Admin Terpisah (URL: /admin) */}
+        {/* Halaman Admin Terpisah (URL: /admin & /login) */}
         <Route 
           path="/admin" 
+          element={<AdminPage onWebsitesChanged={fetchWebsites} />} 
+        />
+        <Route 
+          path="/login" 
           element={<AdminPage onWebsitesChanged={fetchWebsites} />} 
         />
         
