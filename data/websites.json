@@ -1,0 +1,123 @@
+[
+  {
+    "id": "web-1",
+    "title": "Website Sekolah Unggulan",
+    "slug": "website-sekolah-unggulan",
+    "category": "Sekolah",
+    "description": "Platform profil sekolah modern lengkap dengan sistem pengumuman, PPDB online, galeri kegiatan, profil guru, dan informasi akademik terpadu.",
+    "demoUrl": "https://example.com/demo/sekolah",
+    "githubUrl": "https://github.com/example/school-portal",
+    "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&auto=format&fit=crop&q=80",
+    "tags": [
+      "React",
+      "Tailwind CSS",
+      "Express",
+      "Node.js"
+    ],
+    "isFeatured": true,
+    "views": 420,
+    "createdAt": "2026-01-10T10:00:00.000Z",
+    "client": "SMA Bina Nusantara",
+    "year": "2026"
+  },
+  {
+    "id": "web-2",
+    "title": "Website Bisnis & Korporat",
+    "slug": "website-bisnis-korporat",
+    "category": "Bisnis",
+    "description": "Desain eksklusif corporate presence 'Grow Your Business With Us'. Dilengkapi company overview, layanan profesional, portofolio klien, dan formulir lead generation.",
+    "demoUrl": "https://example.com/demo/bisnis",
+    "githubUrl": "https://github.com/example/corporate-website",
+    "image": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80",
+    "tags": [
+      "Next.js",
+      "TypeScript",
+      "Tailwind CSS"
+    ],
+    "isFeatured": true,
+    "views": 890,
+    "createdAt": "2026-01-15T14:30:00.000Z",
+    "client": "PT Mitra Cakrawala Digital",
+    "year": "2026"
+  },
+  {
+    "id": "web-3",
+    "title": "Website UMKM & Kuliner",
+    "slug": "website-umkm-kuliner",
+    "category": "UMKM",
+    "description": "Website menu digital dan landing page untuk bisnis kafe/kuliner 'Waroeng Dimsum & Coffee'. Integrasi katalog menu interaktif dan order via WhatsApp.",
+    "demoUrl": "https://example.com/demo/umkm",
+    "githubUrl": "https://github.com/example/umkm-culinary",
+    "image": "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop&q=80",
+    "tags": [
+      "Vite",
+      "React",
+      "WhatsApp API"
+    ],
+    "isFeatured": true,
+    "views": 612,
+    "createdAt": "2026-02-01T09:15:00.000Z",
+    "client": "Waroeng Dimsum & Coffee",
+    "year": "2026"
+  },
+  {
+    "id": "web-4",
+    "title": "Platform E-Commerce Modern",
+    "slug": "platform-ecommerce-modern",
+    "category": "E-Commerce",
+    "description": "Toko online responsif dengan checkout instan, filter produk real-time, keranjang belanja dinamis, dan kalkulator ongkos kirim.",
+    "demoUrl": "https://example.com/demo/ecommerce",
+    "githubUrl": "https://github.com/example/shop-modern",
+    "image": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&auto=format&fit=crop&q=80",
+    "tags": [
+      "React",
+      "Redux",
+      "Stripe / Midtrans"
+    ],
+    "isFeatured": false,
+    "views": 340,
+    "createdAt": "2026-02-10T11:20:00.000Z",
+    "client": "Urban Apparel Store",
+    "year": "2026"
+  },
+  {
+    "id": "web-5",
+    "title": "Portal Berita & Publikasi",
+    "slug": "portal-berita-publikasi",
+    "category": "Media",
+    "description": "Portal informasi dan berita online dengan sistem kategori multi-level, artikel populer, dark mode, dan performa tinggi (Core Web Vitals).",
+    "demoUrl": "https://example.com/demo/berita",
+    "githubUrl": "",
+    "image": "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80",
+    "tags": [
+      "Next.js",
+      "Tailwind CSS",
+      "CMS"
+    ],
+    "isFeatured": false,
+    "views": 530,
+    "createdAt": "2026-02-18T16:00:00.000Z",
+    "client": "Media Warta Nusantara",
+    "year": "2026"
+  },
+  {
+    "id": "web-6",
+    "title": "SaaS Dashboard & Analytics",
+    "slug": "saas-dashboard-analytics",
+    "category": "SaaS",
+    "description": "Dashboard analitik bisnis berbasis cloud dengan visualisasi data interaktif, manajemen user, laporan finansial, dan audit log.",
+    "demoUrl": "https://example.com/demo/saas",
+    "githubUrl": "https://github.com/example/saas-dashboard",
+    "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop&q=80",
+    "tags": [
+      "React",
+      "Chart.js",
+      "Tailwind CSS"
+    ],
+    "isFeatured": true,
+    "views": 725,
+    "createdAt": "2026-02-20T08:45:00.000Z",
+    "client": "CloudMetric Pro",
+    "year": "2026"
+  }
+]
