@@ -8,17 +8,23 @@ import Footer from './components/Footer';
 import ProjectDetailModal from './components/ProjectDetailModal';
 import FloatingControls from './components/FloatingControls';
 import { defaultWebsites } from './data/defaultWebsites';
-import { subscribeToFirebaseWebsites, fetchWebsitesFromFirebase } from './services/websiteService';
+import { subscribeToFirebaseWebsites, fetchWebsitesFromFirebase, filterDeleted } from './services/websiteService';
 
 export default function App() {
-  const [websites, setWebsites] = useState(defaultWebsites);
+  const [websites, setWebsites] = useState(() => {
+    const saved = localStorage.getItem('afifedu_websites');
+    if (saved) {
+      try { return filterDeleted(JSON.parse(saved)); } catch {}
+    }
+    return filterDeleted(defaultWebsites);
+  });
   const [loading, setLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
 
   const reloadWebsites = async () => {
     try {
       const data = await fetchWebsitesFromFirebase();
-      if (data && data.length > 0) {
+      if (data && data.length >= 0) {
         setWebsites(data);
       }
     } catch (e) {
@@ -31,7 +37,7 @@ export default function App() {
   useEffect(() => {
     // 1. Initial fetch
     fetchWebsitesFromFirebase().then((data) => {
-      if (data && data.length > 0) {
+      if (data) {
         setWebsites(data);
       }
       setLoading(false);
@@ -40,7 +46,7 @@ export default function App() {
     // 2. Real-time Cloud Firestore synchronization
     const unsubscribe = subscribeToFirebaseWebsites(
       (realtimeWebsites) => {
-        if (realtimeWebsites && realtimeWebsites.length > 0) {
+        if (realtimeWebsites) {
           setWebsites(realtimeWebsites);
         }
         setLoading(false);
@@ -62,11 +68,23 @@ export default function App() {
         {/* Halaman Admin Terpisah (URL: /admin & /login) */}
         <Route 
           path="/admin" 
-          element={<AdminPage onWebsitesChanged={fetchWebsites} />} 
+          element={
+            <AdminPage 
+              websites={websites}
+              onUpdateWebsites={setWebsites}
+              onWebsitesChanged={fetchWebsites} 
+            />
+          } 
         />
         <Route 
           path="/login" 
-          element={<AdminPage onWebsitesChanged={fetchWebsites} />} 
+          element={
+            <AdminPage 
+              websites={websites}
+              onUpdateWebsites={setWebsites}
+              onWebsitesChanged={fetchWebsites} 
+            />
+          } 
         />
         
         {/* Halaman Publik (URL: /) */}

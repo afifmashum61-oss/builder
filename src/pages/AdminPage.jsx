@@ -28,7 +28,8 @@ import {
   fetchWebsitesFromFirebase, 
   addWebsiteToFirebase, 
   updateWebsiteInFirebase, 
-  deleteWebsiteFromFirebase 
+  deleteWebsiteFromFirebase,
+  filterDeleted 
 } from '../services/websiteService';
 
 // Helper: Auto-generate live screenshot URL from any website link (like Vercel does)
@@ -55,17 +56,41 @@ const extractTitleFromUrl = (url) => {
   }
 };
 
-export default function AdminPage({ onWebsitesChanged }) {
+export default function AdminPage({ onWebsitesChanged, websites: externalWebsites, onUpdateWebsites }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [authError, setAuthError] = useState('');
 
-  const [websites, setWebsites] = useState([]);
+  const [websites, setWebsites] = useState(() => {
+    if (Array.isArray(externalWebsites) && externalWebsites.length > 0) {
+      return externalWebsites;
+    }
+    const saved = localStorage.getItem('afifedu_websites');
+    if (saved) {
+      try { return filterDeleted(JSON.parse(saved)); } catch {}
+    }
+    return filterDeleted(defaultWebsites);
+  });
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [quickUrl, setQuickUrl] = useState('');
   const [autoCaptureScreenshot, setAutoCaptureScreenshot] = useState(true);
+
+  // Sync external state from App
+  useEffect(() => {
+    if (Array.isArray(externalWebsites)) {
+      setWebsites(externalWebsites);
+    }
+  }, [externalWebsites]);
+
+  // Helper untuk sinkronisasi state lokal, localStorage, dan parent App
+  const updateAndSync = (newList) => {
+    setWebsites(newList);
+    localStorage.setItem('afifedu_websites', JSON.stringify(newList));
+    if (onUpdateWebsites) onUpdateWebsites(newList);
+    if (onWebsitesChanged) onWebsitesChanged();
+  };
 
   // Modal form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,17 +130,16 @@ export default function AdminPage({ onWebsitesChanged }) {
       console.warn("Firestore fetch error:", err);
     }
 
-    if (!list || list.length === 0) {
+    if (!list) {
       const saved = localStorage.getItem('afifedu_websites');
       if (saved) {
-        try { list = JSON.parse(saved); } catch { list = defaultWebsites; }
+        try { list = filterDeleted(JSON.parse(saved)); } catch { list = filterDeleted(defaultWebsites); }
       } else {
-        list = defaultWebsites;
+        list = filterDeleted(defaultWebsites);
       }
     }
 
-    setWebsites(list);
-    localStorage.setItem('afifedu_websites', JSON.stringify(list));
+    updateAndSync(list);
 
     const categories = [...new Set(list.map(i => i.category || 'Umum'))];
     const totalViews = list.reduce((acc, curr) => acc + (curr.views || 0), 0);
@@ -203,8 +227,7 @@ export default function AdminPage({ onWebsitesChanged }) {
     };
 
     const updated = [newSite, ...websites];
-    localStorage.setItem('afifedu_websites', JSON.stringify(updated));
-    setWebsites(updated);
+    updateAndSync(updated);
     setQuickUrl('');
 
     // Simpan ke Cloud Firestore Firebase & Local API
@@ -218,9 +241,6 @@ export default function AdminPage({ onWebsitesChanged }) {
     } catch (err) {
       // offline/vercel
     }
-
-    fetchData();
-    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // When typing/pasting Demo URL in the modal, automatically generate screenshot
@@ -251,8 +271,7 @@ export default function AdminPage({ onWebsitesChanged }) {
     }
     const newScreenshot = generateScreenshotUrl(item.demoUrl);
     const updated = websites.map(w => w.id === item.id ? { ...w, image: newScreenshot } : w);
-    localStorage.setItem('afifedu_websites', JSON.stringify(updated));
-    setWebsites(updated);
+    updateAndSync(updated);
 
     try {
       await updateWebsiteInFirebase(item.id, { image: newScreenshot });
@@ -264,9 +283,6 @@ export default function AdminPage({ onWebsitesChanged }) {
     } catch {
       // offline
     }
-
-    fetchData();
-    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // Open Create Modal
@@ -372,9 +388,8 @@ export default function AdminPage({ onWebsitesChanged }) {
       updatedList.unshift(newSite);
     }
 
-    // Save to localStorage immediately
-    localStorage.setItem('afifedu_websites', JSON.stringify(updatedList));
-    setWebsites(updatedList);
+    // Save and sync immediately
+    updateAndSync(updatedList);
     setIsModalOpen(false);
 
     // Save to Cloud Firestore & API
@@ -399,9 +414,6 @@ export default function AdminPage({ onWebsitesChanged }) {
     } catch (err) {
       // offline/static
     }
-
-    fetchData();
-    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // Delete Website
@@ -411,8 +423,7 @@ export default function AdminPage({ onWebsitesChanged }) {
     }
 
     const updated = websites.filter(w => w.id !== id);
-    localStorage.setItem('afifedu_websites', JSON.stringify(updated));
-    setWebsites(updated);
+    updateAndSync(updated);
 
     try {
       await deleteWebsiteFromFirebase(id);
@@ -420,16 +431,12 @@ export default function AdminPage({ onWebsitesChanged }) {
     } catch (err) {
       // offline
     }
-
-    fetchData();
-    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // Toggle Featured status
   const handleToggleFeatured = async (item) => {
     const updated = websites.map(w => w.id === item.id ? { ...w, isFeatured: !w.isFeatured } : w);
-    localStorage.setItem('afifedu_websites', JSON.stringify(updated));
-    setWebsites(updated);
+    updateAndSync(updated);
 
     try {
       await updateWebsiteInFirebase(item.id, { isFeatured: !item.isFeatured });
@@ -441,9 +448,6 @@ export default function AdminPage({ onWebsitesChanged }) {
     } catch (err) {
       // offline
     }
-
-    fetchData();
-    if (onWebsitesChanged) onWebsitesChanged();
   };
 
   // If not logged in, show PIN login screen
