@@ -25,7 +25,7 @@ Sistem ini membedakan link antara pengunjung umum dan admin:
 
 2. **Web untuk Admin (Khusus Pemilik):**
    - **Dashboard Admin:** [http://localhost:5000/admin](http://localhost:5000/admin)
-   - **PIN Default:** `123456`
+   - **Password Default:** `n4j4h123`
    - **Fitur Admin:**
      - ➕ Tambah Website Baru ke katalog
      - 📸 Upload gambar screenshot langsung ATAU masukkan URL gambar

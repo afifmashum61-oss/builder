@@ -259,13 +259,13 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
-// 8. Simple admin auth check (default PIN: 123456)
+// 8. Admin auth check (Password: n4j4h123)
 app.post('/api/auth/verify', (req, res) => {
   const { pin } = req.body;
-  if (pin === '123456' || pin === 'admin123') {
+  if (pin === 'n4j4h123') {
     res.json({ success: true, token: 'webkita-admin-session-auth' });
   } else {
-    res.status(401).json({ success: false, message: 'PIN Admin salah! (Default: 123456)' });
+    res.status(401).json({ success: false, message: 'Password Admin salah!' });
   }
 });
 

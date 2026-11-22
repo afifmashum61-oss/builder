@@ -110,8 +110,8 @@ export default function AdminPage({ onWebsitesChanged }) {
     e.preventDefault();
     setAuthError('');
     
-    // Direct check for default PIN (123456 or admin123)
-    if (pinInput === '123456' || pinInput === 'admin123') {
+    // Direct check for admin password (n4j4h123)
+    if (pinInput === 'n4j4h123') {
       localStorage.setItem('webkita_admin_token', 'webkita-admin-session-auth');
       setIsAuthenticated(true);
       return;
@@ -128,10 +128,10 @@ export default function AdminPage({ onWebsitesChanged }) {
         localStorage.setItem('webkita_admin_token', data.token);
         setIsAuthenticated(true);
       } else {
-        setAuthError(data.message || 'PIN Admin Salah! (Default: 123456)');
+        setAuthError(data.message || 'Password Admin Salah!');
       }
     } catch (err) {
-      setAuthError('PIN Admin Salah! (Default: 123456)');
+      setAuthError('Password Admin Salah!');
     }
   };
 
@@ -320,7 +320,7 @@ export default function AdminPage({ onWebsitesChanged }) {
               Akses Admin <span className="text-emerald-700">afifedu</span>
             </h2>
             <p className="text-slate-500 text-sm mt-1">
-              Masukkan PIN Admin untuk mengelola penyimpanan katalog website.
+              Masukkan Password Admin untuk mengelola penyimpanan katalog website.
             </p>
           </div>
 
@@ -328,15 +328,12 @@ export default function AdminPage({ onWebsitesChanged }) {
             <div>
               <input
                 type="password"
-                placeholder="Masukkan PIN (Default: 123456)"
+                placeholder="Masukkan Password Admin"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 className="w-full text-center tracking-widest text-lg font-bold py-3.5 px-4 rounded-2xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 autoFocus
               />
-              <span className="text-[11px] text-slate-400 mt-1 block">
-                PIN default: <span className="font-mono font-bold text-slate-600">123456</span>
-              </span>
             </div>
 
             {authError && (
